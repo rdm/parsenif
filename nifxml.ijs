@@ -15,8 +15,9 @@ nifxml=:3 :0
 
 parsenif=:3 :0
   raw=:nifxml''
-  edges=:I.'<'=raw
-  (;getall)each;:'version bitflags enum basic compound niobject'
+  edges=:I.'<'=raw  NB. only used for parsing the xml (assumes no quoted < chars)
+  versions=: {:"1;getall 'version'
+  getall each;:'bitflags enum basic compound niobject'
 )
 
 Note'attributes'
@@ -63,14 +64,20 @@ adds=:3 :0
   >((((<@,1:)@] {:: [)(;<)(<@<@<@] { [)) i.&(<'name')@:({."1))each seq
 )
 
+check=:3 :0
+  assert.-.'"' e.;,y
+  y
+)
+
 attributes=:3 :0
-  t=. ' ',}:y
+  t=. (}.~ [:-'/'={:) ' ',}:y
   segs=. (#~ '='&e.@>) }.t <;._1~(' '&= * 0=[: ~:/\ '"'&=)t
   split=. i.&'='@>segs
-  (split{.&.> segs),. (2+split) (_1 }. }.)&.> segs
+  check (split{.&.> segs),. (2+split) (_1 }. }.)&.> segs
 )
 
 getall=:3 :0
+  type=.'type';y
   locs=.I.('<',y) E. raw
   lens=. ((edges I.locs+1) { edges)-locs
   ends=. ({~ I.&locs) I.('</',y) E. raw
@@ -80,7 +87,7 @@ getall=:3 :0
     txt=.(l+i.l_index{lens){raw
     el=. (1+txt i.'>'){.txt
     assert.('"'+/ .=el)=2*+/'="' E.el
-    e=. a=. attributes el
+    e=. a=. (attributes el),type
     if. -.'/'=_2{el do.
       assert. '"'=_2{el
       full=. (l+i.l_index{elen){raw
@@ -97,3 +104,17 @@ getall=:3 :0
     r=.r,<e
   end.
 )
+
+primitivetypes=:3 :0
+  /:~~.{:"1(#~ (<'storage')={."1);;parsenif''
+)
+
+referencedtypes=:3 :0
+  /:~~.{:"1(#~ (<'type')={."1);(#~ 2=L."0) {:"1;; parsenif''
+)
+
+namedtypes=:3 :0
+  /:~~.{:"1 (#~ (<'name')={."1);; parsenif''
+)
+
+NB. TEMPLATE types will need hardcoded support
